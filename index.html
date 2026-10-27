@@ -1,0 +1,812 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#eef1f6">
+  <title>快团团素材生成器</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #202c43;
+      --muted: #6b778d;
+      --line: #dce2ec;
+      --paper: #fff;
+      --field: #f8f9fc;
+      --blue: #4058dc;
+      --blue-dark: #3044bc;
+      --blue-soft: #eef0ff;
+      --green: #2e785c;
+      --shadow: 0 18px 54px rgba(33, 48, 78, .11);
+      font-family: "Microsoft YaHei UI", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+      color: var(--ink);
+      background: #eef1f6;
+      font-synthesis: none;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; }
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+    .topbar {
+      height: 66px; padding: 0 30px; display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid #dfe4ed; background: rgba(255,255,255,.9);
+    }
+    .brand { display: flex; align-items: center; gap: 11px; font-size: 15px; font-weight: 750; letter-spacing: -.02em; }
+    .brand-mark { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; color: white; background: var(--blue); font-size: 18px; }
+    .top-note { color: var(--muted); font-size: 12px; }
+    .workspace { display: grid; grid-template-columns: minmax(390px, 490px) 1fr; min-height: calc(100vh - 66px); }
+    .editor { background: #fff; border-right: 1px solid var(--line); }
+    .editor-head { padding: 25px 28px 18px; border-bottom: 1px solid #edf0f5; }
+    .editor-head h1 { margin: 0; font-size: 23px; letter-spacing: -.045em; }
+    .editor-head p { margin: 7px 0 0; color: var(--muted); font-size: 12px; line-height: 1.65; }
+    .form-scroll { padding: 0 28px 30px; }
+    .group { padding: 19px 0 17px; border-bottom: 1px solid #edf0f5; }
+    .group:last-child { border: 0; }
+    .group-title { display: flex; align-items: center; justify-content: space-between; margin: 0 0 13px; font-size: 13px; font-weight: 750; }
+    .group-title small { color: #8892a4; font-size: 11px; font-weight: 500; }
+    .field { display: block; margin: 11px 0 0; }
+    .field-label { display: block; margin: 0 0 6px; color: #59667b; font-size: 11px; font-weight: 650; }
+    .field input, .field textarea, .field select {
+      width: 100%; min-height: 38px; padding: 9px 11px; color: var(--ink); background: var(--field);
+      border: 1px solid #e0e5ee; border-radius: 8px; outline: none; font-size: 12px; transition: border-color .15s, box-shadow .15s;
+    }
+    .field textarea { min-height: 60px; resize: vertical; line-height: 1.55; }
+    .field input:focus, .field textarea:focus, .field select:focus { border-color: #8795ff; box-shadow: 0 0 0 3px rgba(64,88,220,.12); background: white; }
+    .field input::placeholder, .field textarea::placeholder { color: #a3adbc; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .row-three { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .choice-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+    .choice { position: relative; }
+    .choice input { position: absolute; opacity: 0; pointer-events: none; }
+    .choice span { display: grid; min-height: 39px; place-items: center; padding: 7px; border: 1px solid #e0e5ee; border-radius: 8px; background: var(--field); color: #68748a; font-size: 11px; text-align: center; cursor: pointer; }
+    .choice input:checked + span { color: #3549c5; border-color: #8592f2; background: var(--blue-soft); font-weight: 700; }
+    .choice input:focus-visible + span, button:focus-visible { outline: 3px solid rgba(64,88,220,.3); outline-offset: 2px; }
+    .image-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .upload { display: flex; min-height: 73px; align-items: center; gap: 9px; padding: 11px; border: 1px dashed #c8d0df; border-radius: 9px; background: #fafbfe; cursor: pointer; }
+    .upload:hover { border-color: #8692e7; background: #f5f6ff; }
+    .upload input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .upload-icon { flex: none; display: grid; place-items: center; width: 31px; height: 31px; color: #5368d8; background: #ecefff; border-radius: 8px; font-size: 17px; }
+    .upload strong { display: block; font-size: 11px; }
+    .upload small { display: block; margin-top: 4px; color: #8490a4; font-size: 10px; }
+    .upload-status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .upload-status { min-height: 16px; margin: 6px 0 0; color: #65738a; font-size: 10px; line-height: 1.45; overflow-wrap: anywhere; }
+    .upload-status[data-state="error"] { color: #a44836; }
+    .selling-list { display: grid; gap: 7px; }
+    .selling-item { display: grid; grid-template-columns: 26px 1fr 30px; align-items: center; gap: 7px; }
+    .selling-item .point-number { display: grid; width: 23px; height: 23px; place-items: center; color: #6675d8; background: #f0f2ff; border-radius: 7px; font-size: 10px; font-weight: 700; }
+    .selling-item input { min-width: 0; height: 34px; padding: 7px 9px; border: 1px solid #e0e5ee; border-radius: 7px; background: var(--field); font-size: 11px; outline: none; }
+    .selling-item input:focus { border-color: #8795ff; }
+    .icon-button { height: 30px; border: 0; border-radius: 7px; color: #77839a; background: transparent; font-size: 17px; }
+    .icon-button:hover { color: #b64450; background: #fff0f0; }
+    .small-button { height: 30px; padding: 0 10px; border: 1px solid #dfe4ee; border-radius: 7px; color: #4659c8; background: white; font-size: 11px; font-weight: 650; }
+    .small-button:hover { background: #f5f6ff; }
+    .small-button:disabled { cursor: default; color: #aab1bd; background: #f7f8fa; }
+    .preview-area { display: flex; min-width: 0; flex-direction: column; align-items: center; padding: 24px 28px 30px; background-color: #eef1f6; background-image: radial-gradient(#d7dce6 .8px, transparent .8px); background-size: 18px 18px; }
+    .preview-head { display: flex; width: min(100%, 590px); align-items: center; justify-content: space-between; margin-bottom: 15px; }
+    .preview-head h2 { margin: 0; font-size: 13px; }
+    .dimension { color: #748096; font-size: 11px; }
+    .template-tabs { display: grid; width: min(100%, 590px); grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 18px; }
+    .template-tab { min-height: 42px; padding: 8px; border: 1px solid #dbe1eb; border-radius: 8px; color: #68748a; background: rgba(255,255,255,.7); font-size: 11px; font-weight: 650; }
+    .template-tab:hover { background: white; }
+    .template-tab.active { color: #384dc6; border-color: #8895ed; background: white; box-shadow: 0 2px 7px rgba(41,57,118,.08); }
+    .canvas-wrap { width: min(100%, 470px); padding: 9px; border: 1px solid rgba(202,210,222,.75); border-radius: 9px; background: rgba(255,255,255,.78); box-shadow: var(--shadow); }
+    #posterCanvas { display: block; width: 100%; height: auto; background: #fff; }
+    .preview-actions { display: flex; width: min(100%, 470px); gap: 9px; margin-top: 13px; }
+    .primary-button, .secondary-button { min-height: 43px; border-radius: 8px; font-size: 12px; font-weight: 750; }
+    .primary-button { flex: 1; border: 1px solid var(--blue); color: white; background: var(--blue); box-shadow: 0 5px 14px rgba(64,88,220,.2); }
+    .primary-button:hover { background: var(--blue-dark); }
+    .secondary-button { padding: 0 15px; border: 1px solid #d8deea; color: #56637a; background: white; }
+    .secondary-button:hover { background: #f8f9fc; }
+    .privacy-note { margin: 11px 0 0; color: #79859a; font-size: 10px; text-align: center; }
+    .notice { min-height: 18px; margin: 4px 0 0; color: #a44836; font-size: 10px; line-height: 1.4; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    @media (max-width: 820px) {
+      .topbar { height: 58px; padding: 0 17px; }
+      .top-note { font-size: 10px; }
+      .workspace { grid-template-columns: minmax(0, 1fr); }
+      .editor { border-right: 0; }
+      .editor-head { padding: 21px 19px 15px; }
+      .form-scroll { padding: 0 19px 23px; }
+      .preview-area { padding: 18px 14px 22px; }
+      .preview-head, .template-tabs { width: min(100%, 470px); }
+      .canvas-wrap { width: min(100%, 360px); }
+      .preview-actions { width: min(100%, 360px); }
+    }
+    @media (max-width: 390px) {
+      .topbar { gap: 8px; padding: 0 12px; }
+      .brand { gap: 8px; font-size: 13px; }
+      .top-note { max-width: 120px; font-size: 9px; text-align: right; }
+      .row-three { grid-template-columns: 1fr 1fr; }
+      .upload { padding: 8px; }
+      .upload-icon { width: 27px; height: 27px; }
+      .choice span { font-size: 10px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
+      .canvas-wrap { position: relative; }
+    .stage-notice { margin: 13px 28px 0; padding: 10px 12px; color: #4656af; border: 1px solid #dce1ff; border-radius: 8px; background: #f4f5ff; font-size: 11px; line-height: 1.55; }
+    .scaffold-fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+    .scaffold-fieldset:disabled { opacity: .78; }
+    .template-tab:disabled, .primary-button:disabled, .secondary-button:disabled { cursor: default; }
+    .canvas-skeleton { position: absolute; inset: 9px; overflow: hidden; pointer-events: none; background: #fff8f2; }
+    .poster-skeleton-tag, .poster-skeleton-brand, .poster-skeleton-title, .poster-skeleton-subtitle, .poster-skeleton-photo, .poster-skeleton-price, .poster-skeleton-points, .poster-skeleton-bottom { position: absolute; }
+    .poster-skeleton-tag { top: 6%; left: 35%; width: 30%; height: 3%; border-radius: 999px; background: #ffe3d6; }
+    .poster-skeleton-brand { top: 11%; left: 28%; width: 44%; height: 1.5%; border-radius: 6px; background: #e5d9d1; }
+    .poster-skeleton-title { top: 16%; left: 12%; width: 76%; height: 6%; border-radius: 8px; background: #d7d1ca; }
+    .poster-skeleton-subtitle { top: 24%; left: 18%; width: 64%; height: 2%; border-radius: 5px; background: #e7ddd6; }
+    .poster-skeleton-photo { top: 29%; left: 21%; width: 58%; height: 32%; border: 2px dashed #d2bdb0; border-radius: 22px; background: #f5e7de; }
+    .poster-skeleton-photo::after { content: '商品主图区域'; position: absolute; inset: 0; display: grid; place-items: center; color: #947d70; font-size: clamp(10px, 2vw, 20px); }
+    .poster-skeleton-points { top: 64%; left: 12%; width: 76%; height: 5%; border-radius: 10px; background: repeating-linear-gradient(90deg, #eee6dd 0 26%, transparent 26% 37%); }
+    .poster-skeleton-price { top: 72%; left: 12%; width: 43%; height: 7%; border-radius: 8px; background: #f4d8cb; }
+    .poster-skeleton-bottom { top: 83%; left: 8%; width: 67%; height: 9%; border-radius: 13px; background: #edebe5; }
+    .poster-skeleton-qr { position: absolute; top: 83%; right: 8%; width: 14%; aspect-ratio: 1; border: 1px dashed #bfc7d2; border-radius: 8px; background: repeating-conic-gradient(#d7dbe2 0 25%, white 0 50%) 50% / 12px 12px; }
+    @media (max-width: 820px) { .stage-notice { margin: 12px 19px 0; } }
+      .workspace { height: calc(100vh - 66px); min-height: 0; overflow: hidden; }
+    .editor { display: flex; height: 100%; min-height: 0; flex-direction: column; overflow: hidden; }
+    .editor-head { flex: none; }
+    .stage-notice { flex: none; margin: 12px 22px 0; padding: 10px 12px; color: #4656af; border: 1px solid #dce1ff; border-radius: 8px; background: #f4f5ff; font-size: 11px; line-height: 1.55; }
+    .form-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 0 22px 12px; scrollbar-gutter: stable; }
+    .scaffold-fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+    .scaffold-fieldset:disabled { opacity: .84; }
+    .group-help { margin: -5px 0 10px; color: #7a8699; font-size: 10px; line-height: 1.5; }
+    .subsection { margin-top: 14px; padding-top: 13px; border-top: 1px solid #edf0f5; }
+    .subsection-title { margin: 0 0 7px; color: #59667b; font-size: 11px; font-weight: 750; }
+    .editor-actions { flex: none; display: flex; flex-wrap: wrap; gap: 9px; padding: 13px 22px max(13px, env(safe-area-inset-bottom)); border-top: 1px solid #e8ecf3; background: #fff; box-shadow: 0 -5px 15px rgba(35,48,74,.035); }
+    .editor-actions .primary-button { flex: 1; }
+    .editor-actions button:disabled { cursor: not-allowed; opacity: .62; }
+    .export-status { flex: 1 0 100%; min-height: 18px; margin: 0; color: #64728d; font-size: 12px; }
+    .export-status[data-state="error"] { color: #b42318; }
+    .export-status[data-state="success"] { color: #16803c; }
+    .reset-note { flex: 1 0 100%; margin: 0; color: #64728d; font-size: 11px; }
+    .editor .template-tabs { width: 100%; margin: 0; }
+    .template-tab:disabled { cursor: not-allowed; }
+    .preview-area { height: 100%; min-height: 0; overflow: auto; justify-content: flex-start; }
+    .preview-note { width: min(100%, 470px); margin: 1px 0 0; color: #7d899d; font-size: 10px; line-height: 1.5; text-align: center; }
+    .canvas-wrap { position: relative; }
+    .canvas-skeleton { position: absolute; inset: 9px; overflow: hidden; pointer-events: none; background: #fff8f2; }
+    .poster-skeleton-tag, .poster-skeleton-brand, .poster-skeleton-title, .poster-skeleton-subtitle, .poster-skeleton-photo, .poster-skeleton-price, .poster-skeleton-points, .poster-skeleton-bottom { position: absolute; }
+    .poster-skeleton-tag { top: 6%; left: 35%; width: 30%; height: 3%; border-radius: 999px; background: #ffe3d6; }
+    .poster-skeleton-brand { top: 11%; left: 28%; width: 44%; height: 1.5%; border-radius: 6px; background: #e5d9d1; }
+    .poster-skeleton-title { top: 16%; left: 12%; width: 76%; height: 6%; border-radius: 8px; background: #d7d1ca; }
+    .poster-skeleton-subtitle { top: 24%; left: 18%; width: 64%; height: 2%; border-radius: 5px; background: #e7ddd6; }
+    .poster-skeleton-photo { top: 29%; left: 21%; width: 58%; height: 32%; border: 2px dashed #d2bdb0; border-radius: 22px; background: #f5e7de; }
+    .poster-skeleton-photo::after { content: '商品主图占位'; position: absolute; inset: 0; display: grid; place-items: center; color: #947d70; font-size: clamp(10px, 2vw, 20px); }
+    .poster-skeleton-points { top: 64%; left: 12%; width: 76%; height: 5%; border-radius: 10px; background: repeating-linear-gradient(90deg, #eee6dd 0 26%, transparent 26% 37%); }
+    .poster-skeleton-price { top: 72%; left: 12%; width: 43%; height: 7%; border-radius: 8px; background: #f4d8cb; }
+    .poster-skeleton-bottom { top: 83%; left: 8%; width: 67%; height: 9%; border-radius: 13px; background: #edebe5; }
+    .poster-skeleton-qr { position: absolute; top: 83%; right: 8%; width: 14%; aspect-ratio: 1; border: 1px dashed #bfc7d2; border-radius: 8px; background: repeating-conic-gradient(#d7dbe2 0 25%, white 0 50%) 50% / 12px 12px; }
+    @media (max-width: 820px) {
+      .workspace { height: auto; min-height: calc(100vh - 58px); overflow: visible; }
+      .editor { height: auto; min-height: 0; overflow: visible; border-right: 0; }
+      .editor-head { padding: 21px 19px 15px; }
+      .stage-notice { margin: 12px 19px 0; }
+      .form-scroll { flex: none; min-height: 0; overflow: visible; padding: 0 19px 18px; }
+      .editor-actions { padding-right: 19px; padding-left: 19px; }
+      .preview-area { height: auto; min-height: 0; overflow: visible; padding: 20px 14px 24px; }
+      .preview-head { width: min(100%, 470px); }
+      .editor .template-tabs { width: 100%; }
+      .canvas-wrap { width: min(100%, 360px); }
+      .preview-note { width: min(100%, 360px); }
+    }
+    @media (max-width: 390px) {
+      .editor-head { padding-right: 16px; padding-left: 16px; }
+      .stage-notice { margin-right: 16px; margin-left: 16px; }
+      .form-scroll { padding-right: 16px; padding-left: 16px; }
+      .editor-actions { padding-right: 16px; padding-left: 16px; }
+      .row-three { grid-template-columns: 1fr 1fr; }
+      .upload { padding: 8px; }
+      .upload-icon { width: 27px; height: 27px; }
+      .choice span { font-size: 10px; }
+    }
+  </style>
+</head>
+<body data-stage="three-layouts">
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">团</span><span>快团团素材生成器</span></div>
+    <div class="top-note">三种版式实时预览</div>
+  </header>
+  <main class="workspace">
+    <section class="editor" aria-labelledby="editorTitle">
+      <div class="editor-head"><h1 id="editorTitle">制作商品海报</h1><p>从左侧填写商品内容，右侧查看海报版面。</p></div>
+      <div class="stage-notice" role="status">本地图片、文案、卖点、价格预览、恢复示例与 PNG 导出已接入；图片比例／裁切控制仍未接入。</div>
+      <form class="form-scroll" id="posterForm">
+          <section class="group" aria-labelledby="layoutGroupTitle">
+            <h2 class="group-title" id="layoutGroupTitle">版式模板 <small>选择海报布局</small></h2>
+            <p class="group-help">三种版式使用不同的图文结构，切换时会保留当前内容。</p>
+            <div class="template-tabs" role="group" aria-label="版式模板选项">
+              <button type="button" class="template-tab active" id="layout-centered" data-layout="centered" aria-pressed="true">居中促销</button>
+              <button type="button" class="template-tab" id="layout-list" data-layout="list" aria-pressed="false">左图清单</button>
+              <button type="button" class="template-tab" id="layout-hero" data-layout="hero" aria-pressed="false">大图爆款</button>
+            </div>
+          </section>
+          <section class="group" aria-labelledby="basicGroupTitle">
+            <h2 class="group-title" id="basicGroupTitle">基础信息 <small>填写商品与团长信息</small></h2>
+            <p class="group-help">这些内容会出现在海报上；示例文字帮助你了解各输入框用途。</p>
+            <div class="row">
+              <label class="field"><span class="field-label">顶部标签</span><input id="tagInput" data-field="tag" placeholder="例：本周人气好物"></label>
+              <label class="field"><span class="field-label">团长昵称／品牌</span><input id="hostInput" data-field="host" placeholder="例：阿宁的日常好物"></label>
+            </div>
+            <label class="field"><span class="field-label">商品标题</span><input id="titleInput" data-field="title" placeholder="例：青提茉莉轻乳茶"></label>
+            <label class="field"><span class="field-label">副标题</span><input id="subtitleInput" data-field="subtitle" placeholder="例：果香清甜 · 茶韵回甘"></label>
+          </section>
+          <section class="group" aria-labelledby="imageGroupTitle">
+            <h2 class="group-title" id="imageGroupTitle">图片素材 <small>从本机选择</small></h2>
+            <p class="group-help">只读取本机 PNG 或 JPG 图片；替换主图和二维码互不影响，图片不会上传。</p>
+            <div class="image-row">
+              <label class="upload"><span class="upload-icon" aria-hidden="true">＋</span><span><strong>选择商品主图</strong><small>PNG 或 JPG · 本机读取</small></span><input id="mainImageInput" type="file" accept="image/png,image/jpeg" aria-label="选择商品主图"></label>
+              <label class="upload"><span class="upload-icon" aria-hidden="true">▦</span><span><strong>选择已有二维码</strong><small>PNG 或 JPG · 本机读取</small></span><input id="qrImageInput" type="file" accept="image/png,image/jpeg" aria-label="选择已有二维码"></label>
+            </div>
+            <div class="upload-status-grid"><p class="upload-status" id="mainImageStatus" role="status" aria-live="polite">尚未选择商品主图</p><p class="upload-status" id="qrImageStatus" role="status" aria-live="polite">尚未选择二维码</p></div>
+            <label class="field"><span class="field-label">商品图区域比例</span><select id="imageRatioInput" aria-label="商品图区域比例" disabled>
+              <option>自动识别（接近 3:4 或 1:1）</option><option>3:4</option><option>1:1</option><option>保留原图比例</option>
+            </select></label>
+            <div class="field"><span class="field-label">图片适配方式</span><div class="choice-row">
+              <label class="choice"><input id="imageFitContain" type="radio" name="imageFit" value="contain" checked disabled><span>完整展示</span></label>
+              <label class="choice"><input id="imageFitCover" type="radio" name="imageFit" value="cover" disabled><span>铺满裁切</span></label>
+            </div></div>
+          </section>
+          <section class="group" aria-labelledby="sellingGroupTitle">
+            <h2 class="group-title" id="sellingGroupTitle">核心卖点 <small id="sellingCount">3/6 条 · 最多 6 条</small></h2>
+            <p class="group-help">用简短语句列出商品特点，空白行可不使用。</p>
+            <div class="selling-list" id="sellingList"></div>
+            <button class="small-button" type="button" id="addSellingPoint" style="margin-top:9px">＋ 添加一条卖点</button>
+          </section>
+          <section class="group" aria-labelledby="conversionGroupTitle">
+            <h2 class="group-title" id="conversionGroupTitle">价格和转化文案 <small>设置优惠与购买提示</small></h2>
+            <p class="group-help">空着的优惠、团长说和规格／发货信息后续会自动隐藏。</p>
+            <div class="subsection">
+              <h3 class="subsection-title">价格信息</h3>
+              <div class="row">
+                <label class="field"><span class="field-label">原价</span><input id="originalPriceInput" inputmode="decimal" autocomplete="off" maxlength="16" placeholder="例：39.90"></label>
+                <label class="field"><span class="field-label">团购价</span><input id="groupPriceInput" inputmode="decimal" autocomplete="off" maxlength="16" placeholder="例：26.80"></label>
+              </div>
+              <p class="group-help price-help">金额可输入整数或最多两位小数；节省金额按整数四舍五入。价格留空时不会显示为 0 元。</p>
+              <p class="notice" id="priceNotice" role="status" aria-live="polite"></p>
+              <label class="field"><span class="field-label">优惠显示</span><input id="discountDisplayInput" placeholder="选填：如第二件优惠"></label>
+            </div>
+            <div class="subsection">
+              <h3 class="subsection-title">团购说明</h3>
+              <label class="field"><span class="field-label">团长说</span><textarea id="hostQuoteInput" placeholder="例：这款我自己回购好几次，茶香清爽"></textarea></label>
+              <label class="field"><span class="field-label">规格／发货信息</span><input id="shippingInput" placeholder="例：6 杯装 · 付款后 48 小时内发货"></label>
+            </div>
+            <div class="subsection">
+              <h3 class="subsection-title">按钮文案</h3>
+              <label class="field"><span class="field-label">按钮主文案</span><input id="buttonMainInput" placeholder="例：立即参团"></label>
+              <label class="field"><span class="field-label">按钮副文案</span><input id="buttonSubInput" placeholder="例：好物限时团购，数量有限"></label>
+            </div>
+          </section>
+      </form>
+      <div class="editor-actions" aria-label="海报操作">
+        <button class="secondary-button" type="button" id="resetExample">恢复示例</button>
+        <button class="primary-button" type="button" id="exportPng">导出 PNG</button>
+        <p class="reset-note">恢复示例会替换当前文字、价格、卖点和图片。</p>
+        <p class="export-status" id="exportStatus" role="status" aria-live="polite">导出尺寸：720 × 1280 px</p>
+      </div>
+    </section>
+    <section class="preview-area" aria-labelledby="previewTitle">
+      <div class="preview-head"><h2 id="previewTitle">海报预览</h2><span class="dimension">720 × 1280 px</span></div>
+      <div class="canvas-wrap">
+        <canvas id="posterCanvas" width="720" height="1280" aria-label="720 × 1280 像素海报画布"></canvas>
+      </div>
+      <p class="preview-note">画布实际尺寸固定为 720 × 1280 像素。切换版式只重新排版，不会清空已填内容或已选图片。</p>
+    </section>
+  </main>
+  <script>
+    (() => {
+      const canvas = document.getElementById('posterCanvas');
+      const context = canvas.getContext('2d');
+      const fields = {
+        tag: document.getElementById('tagInput'),
+        host: document.getElementById('hostInput'),
+        title: document.getElementById('titleInput'),
+        subtitle: document.getElementById('subtitleInput'),
+        quote: document.getElementById('hostQuoteInput'),
+        shipping: document.getElementById('shippingInput'),
+        buttonMain: document.getElementById('buttonMainInput'),
+        buttonSub: document.getElementById('buttonSubInput'),
+        originalPrice: document.getElementById('originalPriceInput'),
+        groupPrice: document.getElementById('groupPriceInput'),
+        discount: document.getElementById('discountDisplayInput')
+      };
+      const imageInputs = {
+        main: { input: document.getElementById('mainImageInput'), status: document.getElementById('mainImageStatus'), name: '商品主图', asset: 'mainImage' },
+        qr: { input: document.getElementById('qrImageInput'), status: document.getElementById('qrImageStatus'), name: '二维码', asset: 'qrImage' }
+      };
+      const assets = { mainImage: null, qrImage: null };
+      const uploadVersions = { main: 0, qr: 0 };
+      const imageLoadTasks = { main: Promise.resolve(), qr: Promise.resolve() };
+      const layoutButtons = {
+        centered: document.getElementById('layout-centered'),
+        list: document.getElementById('layout-list'),
+        hero: document.getElementById('layout-hero')
+      };
+      let currentLayout = 'centered';
+      const priceNotice = document.getElementById('priceNotice');
+      const sellingList = document.getElementById('sellingList');
+      const sellingCount = document.getElementById('sellingCount');
+      const addSellingPoint = document.getElementById('addSellingPoint');
+      const exportButton = document.getElementById('exportPng');
+      const exportStatus = document.getElementById('exportStatus');
+      const resetExampleButton = document.getElementById('resetExample');
+      const imageRatioInput = document.getElementById('imageRatioInput');
+      const imageFitContain = document.getElementById('imageFitContain');
+      const imageFitCover = document.getElementById('imageFitCover');
+      const sellingPoints = ['', '', ''];
+      let exportInProgress = false;
+
+      function renderSellingList() {
+        sellingList.replaceChildren();
+        sellingPoints.forEach((value, index) => {
+          const row = document.createElement('div');
+          row.className = 'selling-item';
+
+          const number = document.createElement('span');
+          number.className = 'point-number';
+          number.textContent = String(index + 1);
+
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.value = value;
+          input.placeholder = `填写第 ${index + 1} 条商品卖点`;
+          input.setAttribute('aria-label', `卖点${index + 1}`);
+          input.addEventListener('input', () => {
+            sellingPoints[index] = input.value;
+            renderPosterPreview();
+          });
+
+          const remove = document.createElement('button');
+          remove.className = 'icon-button';
+          remove.type = 'button';
+          remove.textContent = '×';
+          remove.setAttribute('aria-label', `删除卖点${index + 1}`);
+          remove.addEventListener('click', () => {
+            sellingPoints.splice(index, 1);
+            renderSellingList();
+            renderPosterPreview();
+          });
+
+          row.appendChild(number);
+          row.appendChild(input);
+          row.appendChild(remove);
+          sellingList.appendChild(row);
+        });
+
+        sellingCount.textContent = `${sellingPoints.length}/6 条 · 最多 6 条`;
+        addSellingPoint.disabled = sellingPoints.length >= 6;
+        addSellingPoint.setAttribute('aria-label', sellingPoints.length >= 6 ? '已达到最多 6 条卖点' : `添加卖点，当前 ${sellingPoints.length}/6 条`);
+      }
+
+      function drawWrappedText(value, options) {
+        const { x, y, maxWidth, lineHeight, maxLines, font, color, align = 'left', emptyText } = options;
+        const text = String(value || '').trim() || emptyText;
+        const paragraphs = text.split(/\n/);
+        const lines = [];
+        let clipped = false;
+
+        for (const paragraph of paragraphs) {
+          let line = '';
+          for (const character of Array.from(paragraph)) {
+            const next = line + character;
+            context.font = font;
+            if (line && context.measureText(next).width > maxWidth) {
+              lines.push(line);
+              line = character;
+              if (lines.length >= maxLines) { clipped = true; break; }
+            } else {
+              line = next;
+            }
+          }
+          if (clipped) break;
+          if (line || paragraph === '') lines.push(line);
+          if (lines.length >= maxLines && paragraphs.indexOf(paragraph) < paragraphs.length - 1) {
+            clipped = true;
+            break;
+          }
+        }
+
+        if (lines.length > maxLines) {
+          lines.length = maxLines;
+          clipped = true;
+        }
+        if (clipped && lines.length) {
+          let last = lines[lines.length - 1];
+          context.font = font;
+          while (last && context.measureText(`${last}…`).width > maxWidth) {
+            last = Array.from(last).slice(0, -1).join('');
+          }
+          lines[lines.length - 1] = `${last}…`;
+        }
+
+        context.font = font;
+        context.fillStyle = color;
+        context.textAlign = align;
+        context.textBaseline = 'top';
+        lines.slice(0, maxLines).forEach((line, index) => context.fillText(line, x, y + index * lineHeight, maxWidth));
+      }
+
+      function parsePrice(value, label) {
+        const raw = String(value || '').trim();
+        if (!raw) return { status: 'empty' };
+        if (/^-/.test(raw)) return { status: 'invalid', message: `${label}不能为负数。` };
+        if (!/^\d+(?:\.\d{1,2})?$/.test(raw)) {
+          return { status: 'invalid', message: `${label}格式无效，请输入数字，最多两位小数。` };
+        }
+        const [whole, fraction = ''] = raw.split('.');
+        const cents = BigInt(whole) * 100n + BigInt(fraction.padEnd(2, '0'));
+        const amount = `${cents / 100n}.${String(cents % 100n).padStart(2, '0')}`;
+        return { status: 'valid', cents, amount: `¥${amount}` };
+      }
+
+      function drawContainedImage(image, x, y, width, height) {
+        const sourceWidth = image.naturalWidth || image.width;
+        const sourceHeight = image.naturalHeight || image.height;
+        if (!sourceWidth || !sourceHeight) return;
+        const scale = Math.min(width / sourceWidth, height / sourceHeight);
+        const drawWidth = sourceWidth * scale;
+        const drawHeight = sourceHeight * scale;
+        context.drawImage(image, x + (width - drawWidth) / 2, y + (height - drawHeight) / 2, drawWidth, drawHeight);
+      }
+
+      function loadLocalImage(kind, file) {
+        const target = imageInputs[kind];
+        const version = ++uploadVersions[kind];
+        const extension = String(file.name || '').match(/\.([^.]+)$/)?.[1]?.toLowerCase();
+        const mime = String(file.type || '').toLowerCase();
+        const supportedMime = mime === 'image/png' || mime === 'image/jpeg';
+        const supportedExtension = ['png', 'jpg', 'jpeg'].includes(extension);
+        target.input.value = '';
+
+        if (mime ? !supportedMime : !supportedExtension) {
+          target.status.dataset.state = 'error';
+          target.status.textContent = '仅支持 PNG 和 JPG/JPEG 图片，请重新选择。';
+          const unsupported = Promise.reject(new Error('图片格式不受支持'));
+          unsupported.catch(() => {});
+          imageLoadTasks[kind] = unsupported;
+          return;
+        }
+
+        target.status.dataset.state = 'loading';
+        target.status.textContent = '正在本机读取图片…';
+        const isCurrent = () => uploadVersions[kind] === version;
+        const loadTask = new Promise((resolve, reject) => {
+          const fail = (message) => {
+            if (isCurrent()) {
+              target.status.dataset.state = 'error';
+              target.status.textContent = message;
+            }
+            reject(new Error(message));
+          };
+          try {
+            const reader = new FileReader();
+            reader.onerror = () => fail('文件读取失败，可能文件已损坏或无法访问，请换一张 PNG/JPG 图片。');
+            reader.onabort = () => fail('文件读取已取消，请重新选择 PNG/JPG 图片。');
+            reader.onload = () => {
+              if (!isCurrent()) { resolve(); return; }
+              const image = new Image();
+              image.onerror = () => fail('图片无法解码，文件可能损坏或格式不受支持，请换一张 PNG/JPG 图片。');
+              image.onload = () => {
+                if (!isCurrent()) { resolve(); return; }
+                const width = image.naturalWidth || image.width;
+                const height = image.naturalHeight || image.height;
+                if (!width || !height) { fail('图片尺寸无效，请换一张 PNG/JPG 图片。'); return; }
+                assets[target.asset] = image;
+                target.status.dataset.state = 'success';
+                target.status.textContent = `已加载：${file.name}（${width} × ${height}）`;
+                renderPosterPreview();
+                resolve(image);
+              };
+              image.src = String(reader.result || '');
+            };
+            reader.readAsDataURL(file);
+          } catch {
+            fail('文件读取失败，可能文件已损坏或无法访问，请换一张 PNG/JPG 图片。');
+          }
+        });
+        loadTask.catch(() => {});
+        imageLoadTasks[kind] = loadTask;
+      }
+
+      async function waitForSelectedImages() {
+        await Promise.all([imageLoadTasks.main, imageLoadTasks.qr]);
+        for (const key of ['mainImage', 'qrImage']) {
+          const image = assets[key];
+          if (image && (!(image.naturalWidth || image.width) || !(image.naturalHeight || image.height))) {
+            throw new Error('有图片尚未完成解码，请稍后重试。');
+          }
+        }
+      }
+
+      function makeExportFilename() {
+        const layoutNames = { centered: '居中促销', list: '左图清单', hero: '大图爆款' };
+        const rawTitle = String(fields.title.value || '').trim();
+        const cleanPart = value => value.replace(/[<>:"/\\|?*\u0000-\u001f]/g, '-').replace(/[. ]+$/g, '').trim();
+        return `${cleanPart(rawTitle) || '商品海报'}-${layoutNames[currentLayout]}.png`;
+      }
+
+      async function exportPosterPng() {
+        if (exportInProgress) return;
+        exportInProgress = true;
+        exportButton.disabled = true;
+        exportStatus.dataset.state = 'loading';
+        exportStatus.textContent = '正在等待图片加载并生成 PNG…';
+        let objectUrl = '';
+        try {
+          await waitForSelectedImages();
+          renderPosterPreview();
+          const blob = await new Promise((resolve, reject) => {
+            if (typeof canvas.toBlob !== 'function') { reject(new Error('当前浏览器不支持 PNG 画布导出。')); return; }
+            try {
+              canvas.toBlob(result => result ? resolve(result) : reject(new Error('PNG 生成失败，浏览器未返回图片数据。')), 'image/png');
+            } catch {
+              reject(new Error('PNG 生成失败，浏览器无法读取海报画布。'));
+            }
+          });
+          if (!URL || typeof URL.createObjectURL !== 'function') throw new Error('当前浏览器不支持下载图片。');
+          objectUrl = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = makeExportFilename();
+          link.href = objectUrl;
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          exportStatus.dataset.state = 'success';
+          exportStatus.textContent = 'PNG 下载已触发，请在浏览器下载列表或默认下载文件夹中查看。';
+        } catch (error) {
+          exportStatus.dataset.state = 'error';
+          exportStatus.textContent = `导出失败：${error?.message || '发生未知错误，请重试。'}`;
+        } finally {
+          if (objectUrl) setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+          exportInProgress = false;
+          exportButton.disabled = false;
+        }
+      }
+
+      function formatPriceStatus(original, group) {
+        const problems = [original, group].filter(price => price.status === 'invalid').map(price => price.message);
+        priceNotice.textContent = problems.join(' ');
+
+        if (original.status === 'invalid' || group.status === 'invalid') {
+          return { originalText: original.status === 'invalid' ? '需修正' : (original.amount || '待填写'), groupText: group.status === 'invalid' ? '需修正' : (group.amount || '待填写'), message: '请修正价格后查看优惠' };
+        }
+        if (original.status === 'empty' || group.status === 'empty') {
+          return { originalText: original.amount || '待填写', groupText: group.amount || '待填写', message: '填写价格后显示优惠' };
+        }
+        if (original.cents > group.cents) {
+          const savingYuan = (original.cents - group.cents + 50n) / 100n;
+          return { originalText: original.amount, groupText: group.amount, message: `节省 ¥${savingYuan}` };
+        }
+        return { originalText: original.amount, groupText: group.amount, message: '立即跟团' };
+      }
+
+      const palettes = {
+        centered: { background: '#fff8f2', card: '#fff', photo: '#f3e7df', ink: '#332d2a', muted: '#75675f', accent: '#e75e3e', soft: '#ffe3d6', tag: '#a24e34', buttonText: '#fff', border: '#d9c4b7' },
+        list: { background: '#f2f6ff', card: '#fff', photo: '#e5ebfa', ink: '#203153', muted: '#64728d', accent: '#4058dc', soft: '#e1e8ff', tag: '#3044bc', buttonText: '#fff', border: '#bac7ec' },
+        hero: { background: '#20283b', card: '#303a50', photo: '#38445b', ink: '#fff8e8', muted: '#d2d9e8', accent: '#f1bd48', soft: '#f1bd48', tag: '#252c3c', buttonText: '#222a3c', border: '#59647a' }
+      };
+
+      function drawPosterTagAndBrand(theme, layout) {
+        const centered = layout === 'centered';
+        const x = centered ? 252 : 52;
+        const y = centered ? 47 : 42;
+        const width = centered ? 216 : 178;
+        context.fillStyle = theme.soft;
+        context.beginPath(); context.roundRect(x, y, width, 38, 19); context.fill();
+        drawWrappedText(fields.tag.value, {
+          x: centered ? 360 : x + width / 2, y: y + 9, maxWidth: width - 20, lineHeight: 20, maxLines: 1,
+          font: 'bold 18px "Microsoft YaHei UI", sans-serif', color: theme.tag, align: 'center', emptyText: '顶部标签（未填写）'
+        });
+        drawWrappedText(fields.host.value, {
+          x: centered ? 360 : 668, y: centered ? 103 : 50, maxWidth: centered ? 570 : 300,
+          lineHeight: 26, maxLines: 1, font: 'bold 20px "Microsoft YaHei UI", sans-serif', color: theme.muted,
+          align: centered ? 'center' : 'right', emptyText: '团长昵称／品牌（未填写）'
+        });
+      }
+
+      function drawMainImageFrame(x, y, width, height, theme, radius = 24) {
+        context.fillStyle = theme.photo;
+        context.beginPath(); context.roundRect(x, y, width, height, radius); context.fill();
+        context.strokeStyle = theme.border; context.lineWidth = 2; context.setLineDash([8, 7]);
+        context.beginPath(); context.roundRect(x + 2, y + 2, width - 4, height - 4, Math.max(4, radius - 2)); context.stroke(); context.setLineDash([]);
+        if (assets.mainImage) {
+          drawContainedImage(assets.mainImage, x + 10, y + 10, width - 20, height - 20);
+        } else {
+          context.fillStyle = theme.muted; context.font = '24px "Microsoft YaHei UI", sans-serif'; context.textAlign = 'center'; context.textBaseline = 'middle';
+          context.fillText('商品主图占位（未选择）', x + width / 2, y + height / 2, width - 28);
+        }
+      }
+
+      function drawCenteredLayout(points, theme) {
+        drawPosterTagAndBrand(theme, 'centered');
+        drawWrappedText(fields.title.value, { x: 360, y: 150, maxWidth: 570, lineHeight: 45, maxLines: 2, font: 'bold 40px "Microsoft YaHei UI", sans-serif', color: theme.ink, align: 'center', emptyText: '商品标题（未填写）' });
+        drawWrappedText(fields.subtitle.value, { x: 360, y: 244, maxWidth: 540, lineHeight: 28, maxLines: 2, font: '22px "Microsoft YaHei UI", sans-serif', color: theme.muted, align: 'center', emptyText: '副标题（未填写）' });
+
+        const top = 316;
+        const totalHeight = 494;
+        const blockHeight = points.length ? points.length * 30 + (points.length - 1) * 6 + 10 : 0;
+        const photoHeight = totalHeight - blockHeight;
+        drawMainImageFrame(104, top, 512, photoHeight, theme, 26);
+        points.forEach((point, index) => {
+          const y = top + photoHeight + 10 + index * 36;
+          context.fillStyle = theme.accent; context.font = 'bold 20px "Microsoft YaHei UI", sans-serif'; context.textAlign = 'left'; context.textBaseline = 'top';
+          context.fillText('•', 78, y + 3, 24);
+          drawWrappedText(point, { x: 108, y: y + 3, maxWidth: 520, lineHeight: 22, maxLines: 1, font: '20px "Microsoft YaHei UI", sans-serif', color: theme.ink, emptyText: '' });
+        });
+      }
+
+      function drawListLayout(points, theme) {
+        drawPosterTagAndBrand(theme, 'list');
+        drawWrappedText(fields.title.value, { x: 52, y: 105, maxWidth: 616, lineHeight: 40, maxLines: 3, font: 'bold 36px "Microsoft YaHei UI", sans-serif', color: theme.ink, emptyText: '商品标题（未填写）' });
+        drawWrappedText(fields.subtitle.value, { x: 52, y: 232, maxWidth: 616, lineHeight: 26, maxLines: 2, font: '21px "Microsoft YaHei UI", sans-serif', color: theme.muted, emptyText: '副标题（未填写）' });
+
+        const top = 310;
+        const height = 500;
+        drawMainImageFrame(52, top, 296, height, theme, 20);
+        points.forEach((point, index) => {
+          const y = top + 4 + index * 81;
+          context.fillStyle = theme.card;
+          context.beginPath(); context.roundRect(370, y, 298, 75, 14); context.fill();
+          context.fillStyle = theme.soft;
+          context.beginPath(); context.roundRect(382, y + 13, 30, 30, 9); context.fill();
+          context.fillStyle = theme.accent; context.font = 'bold 15px "Microsoft YaHei UI", sans-serif'; context.textAlign = 'center'; context.textBaseline = 'middle';
+          context.fillText(String(index + 1), 397, y + 28, 24);
+          drawWrappedText(point, { x: 422, y: y + 11, maxWidth: 232, lineHeight: 25, maxLines: 2, font: '18px "Microsoft YaHei UI", sans-serif', color: theme.ink, emptyText: '' });
+        });
+      }
+
+      function drawHeroLayout(points, theme) {
+        drawPosterTagAndBrand(theme, 'hero');
+        drawWrappedText(fields.title.value, { x: 360, y: 99, maxWidth: 616, lineHeight: 54, maxLines: 2, font: 'bold 48px "Microsoft YaHei UI", sans-serif', color: theme.ink, align: 'center', emptyText: '商品标题（未填写）' });
+        drawWrappedText(fields.subtitle.value, { x: 360, y: 214, maxWidth: 610, lineHeight: 27, maxLines: 2, font: '22px "Microsoft YaHei UI", sans-serif', color: theme.muted, align: 'center', emptyText: '副标题（未填写）' });
+
+        const top = 294;
+        const totalHeight = 616;
+        const rowCount = Math.ceil(points.length / 2);
+        const bulletBlockHeight = rowCount ? 16 + rowCount * 54 + (rowCount - 1) * 8 : 0;
+        const photoHeight = totalHeight - bulletBlockHeight;
+        drawMainImageFrame(36, top, 648, photoHeight, theme, 28);
+        const bulletTop = top + photoHeight + 16;
+        points.forEach((point, index) => {
+          const column = index % 2;
+          const row = Math.floor(index / 2);
+          const x = 42 + column * 323;
+          const y = bulletTop + row * 62;
+          context.fillStyle = theme.card;
+          context.beginPath(); context.roundRect(x, y, 313, 54, 13); context.fill();
+          context.fillStyle = theme.accent; context.font = 'bold 20px "Microsoft YaHei UI", sans-serif'; context.textAlign = 'left'; context.textBaseline = 'top';
+          context.fillText('•', x + 12, y + 13, 22);
+          drawWrappedText(point, { x: x + 36, y: y + 9, maxWidth: 263, lineHeight: 22, maxLines: 2, font: '17px "Microsoft YaHei UI", sans-serif', color: theme.ink, emptyText: '' });
+        });
+      }
+
+      function drawBottomSections(theme, quoteTop, quoteHeight, shippingTop, quoteLines, quoteLineHeight) {
+        context.fillStyle = theme.card;
+        context.beginPath(); context.roundRect(58, quoteTop, 604, quoteHeight, 18); context.fill();
+        drawWrappedText(fields.quote.value, { x: 84, y: quoteTop + 12, maxWidth: 552, lineHeight: quoteLineHeight, maxLines: quoteLines, font: '20px "Microsoft YaHei UI", sans-serif', color: theme.ink, emptyText: '团长说（未填写）' });
+        drawWrappedText(fields.shipping.value, { x: 78, y: shippingTop, maxWidth: 564, lineHeight: 24, maxLines: 2, font: '18px "Microsoft YaHei UI", sans-serif', color: theme.muted, emptyText: '规格／发货信息（未填写）' });
+
+        context.fillStyle = theme.accent;
+        context.beginPath(); context.roundRect(58, 1058, 604, 112, 22); context.fill();
+        drawWrappedText(fields.buttonMain.value, { x: 360, y: 1071, maxWidth: 550, lineHeight: 40, maxLines: 1, font: 'bold 30px "Microsoft YaHei UI", sans-serif', color: theme.buttonText, align: 'center', emptyText: '按钮主文案（未填写）' });
+        drawWrappedText(fields.buttonSub.value, { x: 360, y: 1117, maxWidth: 550, lineHeight: 25, maxLines: 2, font: '18px "Microsoft YaHei UI", sans-serif', color: theme.buttonText, align: 'center', emptyText: '按钮副文案（未填写）' });
+        drawPriceFooter(theme);
+      }
+
+      function drawPriceFooter(theme) {
+        context.fillStyle = theme.card;
+        context.beginPath(); context.roundRect(58, 1210, 604, 58, 12); context.fill();
+        context.strokeStyle = theme.border; context.lineWidth = 2; context.setLineDash([6, 5]);
+        context.beginPath(); context.roundRect(572, 1215, 48, 48, 5); context.stroke(); context.setLineDash([]);
+        const originalPrice = parsePrice(fields.originalPrice.value, '原价');
+        const groupPrice = parsePrice(fields.groupPrice.value, '团购价');
+        const priceStatus = formatPriceStatus(originalPrice, groupPrice);
+        context.textAlign = 'left'; context.textBaseline = 'top'; context.font = '14px "Microsoft YaHei UI", sans-serif'; context.fillStyle = theme.muted;
+        context.fillText('原价', 80, 1216, 42);
+        context.fillText('团购价', 80, 1238, 56);
+        context.font = '18px "Microsoft YaHei UI", sans-serif';
+        context.fillStyle = originalPrice.status === 'valid' ? theme.muted : '#9b958f';
+        context.fillText(priceStatus.originalText, 128, 1213, 128);
+        if (originalPrice.status === 'valid') {
+          const oldPriceWidth = context.measureText(priceStatus.originalText).width;
+          context.strokeStyle = theme.muted; context.lineWidth = 1;
+          context.beginPath(); context.moveTo(128, 1225); context.lineTo(128 + oldPriceWidth, 1225); context.stroke();
+        }
+        context.font = 'bold 26px "Microsoft YaHei UI", sans-serif';
+        context.fillStyle = groupPrice.status === 'valid' ? theme.accent : '#9b958f';
+        context.fillText(priceStatus.groupText, 144, 1235, 118);
+        drawWrappedText(priceStatus.message, { x: 278, y: 1236, maxWidth: 270, lineHeight: 18, maxLines: 1, font: 'bold 16px "Microsoft YaHei UI", sans-serif', color: originalPrice.status === 'valid' && groupPrice.status === 'valid' && originalPrice.cents > groupPrice.cents ? theme.accent : theme.ink, emptyText: '' });
+        drawWrappedText(fields.discount.value, { x: 278, y: 1253, maxWidth: 270, lineHeight: 14, maxLines: 1, font: '12px "Microsoft YaHei UI", sans-serif', color: theme.muted, emptyText: '' });
+        if (assets.qrImage) drawContainedImage(assets.qrImage, 575, 1218, 42, 42);
+        else {
+          context.fillStyle = theme.muted; context.font = '11px "Microsoft YaHei UI", sans-serif'; context.textAlign = 'center'; context.textBaseline = 'middle';
+          context.fillText('二维码占位', 596, 1239, 44);
+        }
+      }
+
+      function selectTemplate(layout) {
+        if (!layoutButtons[layout]) return;
+        currentLayout = layout;
+        Object.entries(layoutButtons).forEach(([name, button]) => {
+          const selected = name === layout;
+          button.className = selected ? 'template-tab active' : 'template-tab';
+          button.setAttribute('aria-pressed', String(selected));
+        });
+        renderPosterPreview();
+      }
+
+      function renderPosterPreview() {
+        const theme = palettes[currentLayout];
+        const points = sellingPoints.map(point => point.trim()).filter(Boolean);
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = theme.background;
+        context.fillRect(0, 0, canvas.width, canvas.height);
+
+        if (currentLayout === 'centered') {
+          drawCenteredLayout(points, theme);
+          drawBottomSections(theme, 830, 108, 950, 3, 25);
+        } else if (currentLayout === 'list') {
+          drawListLayout(points, theme);
+          drawBottomSections(theme, 830, 108, 950, 3, 25);
+        } else {
+          drawHeroLayout(points, theme);
+          drawBottomSections(theme, 924, 60, 994, 2, 22);
+        }
+      }
+
+      const exampleContent = {
+        tag: '本周人气好物',
+        host: '阿宁的日常好物',
+        title: '青提茉莉轻乳茶',
+        subtitle: '果香清甜 · 茶韵回甘',
+        quote: '茶香清爽，我自己也会回购。',
+        shipping: '6 杯装 · 付款后 48 小时内发货',
+        buttonMain: '立即参团',
+        buttonSub: '好物限时团购，数量有限',
+        originalPrice: '39.90',
+        groupPrice: '26.80',
+        discount: '限时团购'
+      };
+
+      if (resetExampleButton) resetExampleButton.addEventListener('click', () => {
+        Object.entries(exampleContent).forEach(([key, value]) => { fields[key].value = value; });
+        sellingPoints.splice(0, sellingPoints.length, '果香清甜', '茉莉茶香，回味清新', '冷藏后风味更佳');
+
+        for (const kind of ['main', 'qr']) {
+          const target = imageInputs[kind];
+          uploadVersions[kind]++;
+          target.input.value = '';
+          assets[target.asset] = null;
+          target.status.dataset.state = '';
+          target.status.textContent = kind === 'main' ? '尚未选择商品主图' : '尚未选择二维码';
+          imageLoadTasks[kind] = Promise.resolve();
+        }
+
+        imageRatioInput.selectedIndex = 0;
+        imageFitContain.checked = true;
+        imageFitCover.checked = false;
+        renderSellingList();
+        renderPosterPreview();
+      });
+
+      addSellingPoint.addEventListener('click', () => {
+        if (sellingPoints.length >= 6) return;
+        sellingPoints.push('');
+        renderSellingList();
+        renderPosterPreview();
+      });
+      Object.entries(layoutButtons).forEach(([layout, button]) => button.addEventListener('click', () => selectTemplate(layout)));
+      Object.entries(imageInputs).forEach(([kind, target]) => {
+        target.input.addEventListener('change', event => {
+          const file = event.target.files && event.target.files[0];
+          if (file) loadLocalImage(kind, file);
+        });
+      });
+      if (exportButton) exportButton.addEventListener('click', exportPosterPng);
+      Object.values(fields).forEach(field => field.addEventListener('input', renderPosterPreview));
+      priceNotice.textContent = '';
+      renderSellingList();
+      renderPosterPreview();
+    })();
+  </script>
+</body>
+</html>
+
